@@ -1,6 +1,8 @@
 mod err;
 pub use err::*;
 
+pub mod parse;
+
 pub enum Expr {
 	Constant(f64),
 	X,
