@@ -1,6 +1,8 @@
 use std::{borrow::Cow, collections::HashMap};
 
-#[derive(Clone, Debug)]
+use crate::Error;
+
+#[derive(Clone, Debug, PartialEq)]
 pub enum Token {
 	Constant(f64),
 	X,
@@ -13,6 +15,8 @@ pub enum Token {
 	ParensOpen,
 	ParensClose,
 	Parens(Vec<Token>),
+
+	Error(Error),
 }
 
 type Charmap = HashMap<char, Token>;
@@ -34,12 +38,15 @@ fn gen_charmap() -> Charmap {
 pub struct Tokenizer<'a> {
 	parser: baseparser::Parser<'a>,
 	cmap: Charmap, // <- this is supposed to be gen_charmap()
+
+	remaining: Option<Token>,
 }
 impl<'a> Tokenizer<'a> {
 	pub fn new(s: impl Into<Cow<'a, str>>) -> Self {
 		Self {
 			parser: baseparser::Parser::new(s),
 			cmap: gen_charmap(),
+			remaining: None,
 		}
 	}
 }
@@ -47,6 +54,48 @@ impl<'a> Iterator for Tokenizer<'a> {
 	type Item = Token;
 
 	fn next(&mut self) -> Option<Self::Item> {
-		None
+		self.remaining.take().map(|a| Some(a)).unwrap_or_else(|| {
+			let (splitter, read) = self.parser.read_until_any(self.cmap.keys().cloned());
+			let splitter = splitter.map(|c| self.cmap.get(&c).cloned()).flatten();
+
+			let read = read.trim();
+
+			if read.len() > 0 {
+				self.remaining = splitter;
+
+				let f: Result<f64, _> = read.parse();
+
+				match f {
+					Ok(a) => Some(Token::Constant(a)),
+					Err(err) => Some(Token::Error(err.into())),
+				}
+			} else {
+				splitter
+			}
+		})
+	}
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+
+	#[test]
+	fn test_tokenizer() {
+		let mut tokenizer = Tokenizer::new("6 * 4 * x / 6 ( 4 + 6 )");
+
+		assert_eq!(tokenizer.next(), Some(Token::Constant(6.0)));
+		assert_eq!(tokenizer.next(), Some(Token::Multiply));
+		assert_eq!(tokenizer.next(), Some(Token::Constant(4.0)));
+		assert_eq!(tokenizer.next(), Some(Token::Multiply));
+		assert_eq!(tokenizer.next(), Some(Token::X));
+		assert_eq!(tokenizer.next(), Some(Token::Divide));
+		assert_eq!(tokenizer.next(), Some(Token::Constant(6.0)));
+		assert_eq!(tokenizer.next(), Some(Token::ParensOpen));
+		assert_eq!(tokenizer.next(), Some(Token::Constant(4.0)));
+		assert_eq!(tokenizer.next(), Some(Token::Add));
+		assert_eq!(tokenizer.next(), Some(Token::Constant(6.0)));
+		assert_eq!(tokenizer.next(), Some(Token::ParensClose));
+		assert_eq!(tokenizer.next(), None);
 	}
 }
