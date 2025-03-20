@@ -51,9 +51,10 @@ pub fn parse_tokens<I: Iterator<Item = Token>>(mut iter: I) -> Result<Expr> {
 				let next = to_expr(iter.next())?;
 				expr = Expr::divide(expr, next);
 			}
+			Token::X => expr = Expr::multiply(expr, Expr::X),
 			_ => {
 				return Err(Error::UnexpectedToken {
-					expected: "+, -, *, /",
+					expected: "+, -, *, /, or x",
 					got: Box::new(token),
 				})
 			}
@@ -76,6 +77,14 @@ mod tests {
 			expr,
 			Expr::multiply(Expr::Constant(4.0), Expr::Constant(5.0))
 		);
+	}
+	#[test]
+	fn test_parser_3() {
+		let s = "4*5x";
+		let expr = parse(s).expect("failed to parse");
+		let expr = expr.simplify();
+
+		assert_eq!(expr, Expr::multiply(Expr::Constant(20.0), Expr::X));
 	}
 	#[test]
 	fn test_parser_2() {

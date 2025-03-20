@@ -99,10 +99,7 @@ mod tests {
 		let expr = "4 * 3 / 2 * 10 * x";
 		let expr = parse::parse(expr).expect("failed to parse");
 		let expr = expr.simplify();
-		if let Expr::Constant(num) = expr {
-			assert_eq!(num, 60.0);
-		} else {
-			panic!("should've been simplified {expr:#?}");
-		}
+
+		assert_eq!(expr, Expr::multiply(Expr::Constant(60.0), Expr::X))
 	}
 }
