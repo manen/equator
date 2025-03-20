@@ -1,101 +1,28 @@
-use std::{borrow::Cow, collections::HashMap};
+use crate::{
+	token::{self, Token},
+	Expr, Result,
+};
 
-use crate::Error;
+pub fn parse(s: &str) -> Result<Expr> {
+	let tokens = token::Tokenizer::new(s);
+	let tokens = token::ParensParser::new(tokens);
+	let tokens = tokens.collect::<Vec<_>>();
 
-#[derive(Clone, Debug, PartialEq)]
-pub enum Token {
-	Constant(f64),
-	X,
-
-	Add,
-	Subtract,
-	Multiply,
-	Divide,
-
-	ParensOpen,
-	ParensClose,
-	Parens(Vec<Token>),
-
-	Error(Error),
+	parse_tokens(&tokens)
 }
 
-type Charmap = HashMap<char, Token>;
-fn gen_charmap() -> Charmap {
-	[
-		('+', Token::Add),
-		('-', Token::Subtract),
-		('*', Token::Multiply),
-		('/', Token::Divide),
-		('x', Token::X),
-		('(', Token::ParensOpen),
-		(')', Token::ParensClose),
-	]
-	.into_iter()
-	.collect()
-}
+/// input has to be `ParensParse`'d
+pub fn parse_tokens(tokens: &[Token]) -> Result<Expr> {
+	todo!()
 
-#[derive(Clone, Debug)]
-pub struct Tokenizer<'a> {
-	parser: baseparser::Parser<'a>,
-	cmap: Charmap, // <- this is supposed to be gen_charmap()
+	// we need to go from mindless token list
+	// to an order of operationed expression
 
-	remaining: Option<Token>,
-}
-impl<'a> Tokenizer<'a> {
-	pub fn new(s: impl Into<Cow<'a, str>>) -> Self {
-		Self {
-			parser: baseparser::Parser::new(s),
-			cmap: gen_charmap(),
-			remaining: None,
-		}
-	}
-}
-impl<'a> Iterator for Tokenizer<'a> {
-	type Item = Token;
+	// THERE"S ONLY 3 LEVELS
+	// 1. +, -  -> we don't need nothing
+	// 2. *, /  -> Token::LowOrderParens
+	// 3. ()    -> Token::Parens
 
-	fn next(&mut self) -> Option<Self::Item> {
-		self.remaining.take().map(|a| Some(a)).unwrap_or_else(|| {
-			let (splitter, read) = self.parser.read_until_any(self.cmap.keys().cloned());
-			let splitter = splitter.map(|c| self.cmap.get(&c).cloned()).flatten();
-
-			let read = read.trim();
-
-			if read.len() > 0 {
-				self.remaining = splitter;
-
-				let f: Result<f64, _> = read.parse();
-
-				match f {
-					Ok(a) => Some(Token::Constant(a)),
-					Err(err) => Some(Token::Error(err.into())),
-				}
-			} else {
-				splitter
-			}
-		})
-	}
-}
-
-#[cfg(test)]
-mod tests {
-	use super::*;
-
-	#[test]
-	fn test_tokenizer() {
-		let mut tokenizer = Tokenizer::new("6 * 4 * x / 6 ( 4 + 6 )");
-
-		assert_eq!(tokenizer.next(), Some(Token::Constant(6.0)));
-		assert_eq!(tokenizer.next(), Some(Token::Multiply));
-		assert_eq!(tokenizer.next(), Some(Token::Constant(4.0)));
-		assert_eq!(tokenizer.next(), Some(Token::Multiply));
-		assert_eq!(tokenizer.next(), Some(Token::X));
-		assert_eq!(tokenizer.next(), Some(Token::Divide));
-		assert_eq!(tokenizer.next(), Some(Token::Constant(6.0)));
-		assert_eq!(tokenizer.next(), Some(Token::ParensOpen));
-		assert_eq!(tokenizer.next(), Some(Token::Constant(4.0)));
-		assert_eq!(tokenizer.next(), Some(Token::Add));
-		assert_eq!(tokenizer.next(), Some(Token::Constant(6.0)));
-		assert_eq!(tokenizer.next(), Some(Token::ParensClose));
-		assert_eq!(tokenizer.next(), None);
-	}
+	// if there's only 1 level in a segment of the expression we don't need anything
+	// if there's multiplication and/or division we can put it in a LowOrderParens
 }
