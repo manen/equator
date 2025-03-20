@@ -1,28 +1,40 @@
 use crate::{
 	token::{self, Token},
-	Expr, Result,
+	Error, Expr, Result,
 };
 
 pub fn parse(s: &str) -> Result<Expr> {
 	let tokens = token::Tokenizer::new(s);
 	let tokens = token::ParensParser::new(tokens);
-	let tokens = tokens.collect::<Vec<_>>();
 
-	parse_tokens(&tokens)
+	parse_tokens(tokens)
 }
 
 /// input has to be `ParensParse`'d
-pub fn parse_tokens(tokens: &[Token]) -> Result<Expr> {
-	todo!()
+pub fn parse_tokens<I: Iterator<Item = Token>>(mut iter: I) -> Result<Expr> {
+	let to_expr = |token: Option<Token>| match token {
+		Some(Token::Constant(num)) => Ok(Expr::Constant(num)),
+		Some(Token::X) => Ok(Expr::X),
+		Some(Token::Parens(tokens)) => parse_tokens(tokens.into_iter()),
+		Some(token) => Err(Error::UnexpectedToken {
+			expected: "number, operations in parenthesis, or x",
+			got: Box::new(token),
+		}),
+		None => Err(Error::EOF),
+	};
 
-	// we need to go from mindless token list
-	// to an order of operationed expression
+	let mut expr: Expr = to_expr(iter.next())?;
 
-	// THERE"S ONLY 3 LEVELS
-	// 1. +, -  -> we don't need nothing
-	// 2. *, /  -> Token::LowOrderParens
-	// 3. ()    -> Token::Parens
+	loop {
+		let token = iter.next();
+		let token = match token {
+			Some(a) => a,
+			None => break,
+		};
+		// let parsed = match token {
+		// 	Token::Add => {}
+		// };
+	}
 
-	// if there's only 1 level in a segment of the expression we don't need anything
-	// if there's multiplication and/or division we can put it in a LowOrderParens
+	Ok(expr)
 }

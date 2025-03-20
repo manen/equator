@@ -94,7 +94,18 @@ impl<I: Iterator<Item = Token>> Iterator for ParensParser<I> {
 			None => None,
 			Some(Token::ParensOpen) => {
 				let inside = {
-					let iter = (&mut self.iter).take_while(|a| a != &Token::ParensClose);
+					let mut pc = 0; // parens count
+					let mut iter = (&mut self.iter).take_while(|a| {
+						let cond = !(pc == 0 && a == &Token::ParensClose);
+						match a {
+							Token::ParensOpen => pc += 1,
+							Token::ParensClose => pc -= 1,
+							_ => {}
+						};
+						cond
+					});
+					let iter: &mut dyn Iterator<Item = Token> = &mut iter; // <- dyn to avoid type overflow
+					let iter = ParensParser::new(iter);
 					iter.collect::<Vec<_>>()
 				};
 				Some(Token::Parens(inside))
@@ -129,7 +140,7 @@ mod tests {
 
 	#[test]
 	fn test_parens_parser() {
-		let tokenizer = Tokenizer::new("6 * 4 * x / 6 ( 4 + 6 )");
+		let tokenizer = Tokenizer::new("6 * 4 * x / 6 ( 4 + ( 6 - 4 ) )");
 		let mut tokenizer = ParensParser::new(tokenizer);
 
 		assert_eq!(tokenizer.next(), Some(Token::Constant(6.0)));
@@ -144,7 +155,11 @@ mod tests {
 			Some(Token::Parens(vec![
 				Token::Constant(4.0),
 				Token::Add,
-				Token::Constant(6.0),
+				Token::Parens(vec![
+					Token::Constant(6.0),
+					Token::Subtract,
+					Token::Constant(4.0)
+				])
 			]))
 		);
 		assert_eq!(tokenizer.next(), None);
