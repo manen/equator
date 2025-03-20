@@ -6,7 +6,7 @@ pub enum Error {
 	NothingToParse,
 	#[error("unexpected end of tokens")]
 	EOF,
-	#[error("unexpected token")]
+	#[error("unexpected token\nexpected: {expected}\ngot: {got:#?}")]
 	UnexpectedToken {
 		expected: &'static str,
 		got: Box<crate::token::Token>,

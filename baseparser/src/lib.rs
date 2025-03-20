@@ -19,16 +19,13 @@ impl<'a> Parser<'a> {
 
 		let mut matched = None;
 
-		'outer: for i in self.i..self.s.len() {
-			self.i = i;
-			let chars = chars.clone();
-
-			let c = match self.s.chars().nth(i) {
+		'outer: loop {
+			let c = match self.s.chars().nth(self.i) {
 				Some(c) => c,
 				None => break,
 			};
 
-			for tc in chars {
+			for tc in chars.clone() {
 				if c == tc {
 					matched = Some(c);
 					end_i = self.i;
@@ -36,6 +33,7 @@ impl<'a> Parser<'a> {
 					break 'outer;
 				}
 			}
+			self.i += 1;
 		}
 
 		println!("slice between ({start_i}-{end_i})");
@@ -60,5 +58,7 @@ mod tests {
 		assert_eq!(read, (Some('*'), "i'm whatever man"));
 		let read = parser.read_until_any(chars.clone());
 		assert_eq!(read, (None, "hello"));
+		let read = parser.read_until_any(chars.clone());
+		assert_eq!(read, (None, ""));
 	}
 }

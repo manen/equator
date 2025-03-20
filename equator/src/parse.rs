@@ -7,7 +7,10 @@ pub fn parse(s: &str) -> Result<Expr> {
 	let tokens = token::Tokenizer::new(s);
 	let tokens = token::ParensParser::new(tokens);
 
-	parse_tokens(tokens)
+	parse_tokens(tokens.map(|a| {
+		println!("{a:#?}");
+		a
+	}))
 }
 
 /// input has to be `ParensParse`'d
@@ -31,10 +34,60 @@ pub fn parse_tokens<I: Iterator<Item = Token>>(mut iter: I) -> Result<Expr> {
 			Some(a) => a,
 			None => break,
 		};
-		// let parsed = match token {
-		// 	Token::Add => {}
-		// };
+		match token {
+			Token::Add => {
+				let next = to_expr(iter.next())?;
+				expr = Expr::add(expr, next);
+			}
+			Token::Subtract => {
+				let next = to_expr(iter.next())?;
+				expr = Expr::subtract(expr, next);
+			}
+			Token::Multiply => {
+				let next = to_expr(iter.next())?;
+				expr = Expr::multiply(expr, next);
+			}
+			Token::Divide => {
+				let next = to_expr(iter.next())?;
+				expr = Expr::divide(expr, next);
+			}
+			_ => {
+				return Err(Error::UnexpectedToken {
+					expected: "+, -, *, /",
+					got: Box::new(token),
+				})
+			}
+		};
 	}
 
 	Ok(expr)
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+
+	#[test]
+	fn test_parser_1() {
+		let s = "4*5";
+		let expr = parse(s).expect("failed to parse");
+
+		assert_eq!(
+			expr,
+			Expr::multiply(Expr::Constant(4.0), Expr::Constant(5.0))
+		);
+	}
+	#[test]
+	fn test_parser_2() {
+		let s = "6 + 5 + 3";
+		let expr = parse(s).expect("failed to parse");
+
+		assert_eq!(
+			expr,
+			Expr::add(
+				Expr::add(Expr::Constant(6.0), Expr::Constant(5.0)),
+				Expr::Constant(3.0)
+			)
+		)
+	}
 }
