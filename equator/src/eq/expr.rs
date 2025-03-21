@@ -1,3 +1,7 @@
+use crate::parse::parse;
+use crate::Error;
+use std::str::FromStr;
+
 #[derive(Clone, PartialEq, Debug)]
 pub enum Expr {
 	Constant(f64),
@@ -7,6 +11,13 @@ pub enum Expr {
 	Subtract(Box<Expr>, Box<Expr>),
 	Multiply(Box<Expr>, Box<Expr>),
 	Divide(Box<Expr>, Box<Expr>),
+}
+impl FromStr for Expr {
+	type Err = Error;
+
+	fn from_str(s: &str) -> Result<Self, Self::Err> {
+		parse(s)
+	}
 }
 impl Expr {
 	pub fn add(a: Expr, b: Expr) -> Self {
@@ -65,7 +76,6 @@ impl Expr {
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use crate::parse::parse;
 
 	#[test]
 	fn test_simplify_1() {

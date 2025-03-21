@@ -20,7 +20,9 @@ pub fn parse_tokens<I: Iterator<Item = Token>>(mut iter: I) -> Result<Expr> {
 			expected: "number, operations in parenthesis, or x",
 			got: Box::new(token),
 		}),
-		None => Err(Error::EOF),
+		None => Err(Error::EOF {
+			comment: Some("expected a number, operations in parenthesis, or x"),
+		}),
 	};
 
 	let mut expr: Expr = to_expr(iter.next())?;
