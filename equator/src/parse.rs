@@ -7,10 +7,7 @@ pub fn parse(s: &str) -> Result<Expr> {
 	let tokens = token::Tokenizer::new(s);
 	let tokens = token::ParensParser::new(tokens);
 
-	parse_tokens(tokens.map(|a| {
-		println!("{a:#?}");
-		a
-	}))
+	parse_tokens(tokens)
 }
 
 /// input has to be `ParensParse`'d

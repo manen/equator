@@ -36,7 +36,6 @@ impl<'a> Parser<'a> {
 			self.i += 1;
 		}
 
-		println!("slice between ({start_i}-{end_i})");
 		(matched, &self.s.as_ref()[start_i..end_i])
 	}
 }

@@ -96,7 +96,7 @@ mod tests {
 	}
 	#[test]
 	fn test_simplify_3() {
-		let expr = "4 * 3 / 2 * 10 * x";
+		let expr = "4 * 3 / 2 * 10x";
 		let expr = parse::parse(expr).expect("failed to parse");
 		let expr = expr.simplify();
 
