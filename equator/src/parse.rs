@@ -51,6 +51,7 @@ pub fn parse_tokens<I: Iterator<Item = Token>>(mut iter: I) -> Result<Expr> {
 				expr = Expr::divide(expr, next);
 			}
 			Token::X => expr = Expr::multiply(expr, Expr::X),
+			Token::Parens(inside) => expr = Expr::multiply(expr, parse_tokens(inside.into_iter())?),
 			_ => {
 				return Err(Error::UnexpectedToken {
 					expected: "+, -, *, /, or x",
