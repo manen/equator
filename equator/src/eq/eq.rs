@@ -6,6 +6,7 @@ use super::Expr;
 
 #[derive(Clone, Debug)]
 pub struct Equation {
+	#[allow(dead_code)]
 	exprs: [Expr; 2],
 }
 impl FromStr for Equation {

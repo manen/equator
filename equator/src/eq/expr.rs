@@ -1,4 +1,5 @@
 use crate::parse::parse;
+use crate::solve::SolveExpr;
 use crate::Error;
 use std::str::FromStr;
 
@@ -66,6 +67,10 @@ impl Expr {
 				Self::Divide(a, b) => Self::divide(a.simplify(), b.simplify()),
 				_ => self,
 			})
+	}
+
+	pub fn into_solve_expr(self) -> SolveExpr {
+		self.into()
 	}
 }
 
